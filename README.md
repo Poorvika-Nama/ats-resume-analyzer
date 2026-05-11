@@ -69,7 +69,7 @@ ats-resume-analyzer/
 
 1. Clone the repo
 
-git clone https://github.com/YOUR_USERNAME/ats-resume-analyzer.git
+git clone https://github.com/Poorvika-Nama/ats-resume-analyzer.git
 cd ats-resume-analyzer
 
 2. Install dependencies
