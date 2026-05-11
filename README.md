@@ -134,7 +134,7 @@ Each required skill in the JD is classified as:
 
 ## Author
 
-Your Name
+Your Name: Poorvika Nama
 LinkedIn: https://www.linkedin.com/in/poorvika-nama-986185291/
 GitHub: https://github.com/Poorvika-Nama
 
