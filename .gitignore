@@ -1,0 +1,24 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+
+# Colab / Jupyter
+*.ipynb_checkpoints/
+.config/
+
+# Large data files — too big for GitHub
+resumes_clean.csv
+jd_clean.csv
+
+# Logs and tunnels
+cf_tunnel.log
+cloudflared
+
+# OS
+.DS_Store
+Thumbs.db

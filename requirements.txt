@@ -1,0 +1,8 @@
+flask
+spacy
+sentence-transformers
+scikit-learn
+xgboost
+joblib
+numpy
+requests

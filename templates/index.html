@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ATS Resume Analyzer</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0f1117;color:#e2e8f0;font-family:'Inter',sans-serif;min-height:100vh}
+  a{text-decoration:none}
+
+  /* ── Nav ── */
+  .nav{background:#0f1117;border-bottom:0.5px solid #1e2235;padding:1rem 2rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+  .nav-icon{width:32px;height:32px;background:#6366f1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .nav-title{font-size:16px;font-weight:500;color:#fff}
+  .nav-sub{font-size:12px;color:#6b7280;margin-left:auto}
+
+  /* ── Layout ── */
+  .container{max-width:1100px;margin:0 auto;padding:2rem}
+
+  /* ── Input section ── */
+  .input-section{background:#131720;border:0.5px solid #1e2235;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
+  .section-heading{font-size:13px;font-weight:500;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:1rem}
+  .input-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  .input-group{display:flex;flex-direction:column;gap:6px}
+  .input-label{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}
+  textarea,input,select{background:#0f1117;border:0.5px solid #2d3149;border-radius:8px;color:#e2e8f0;font-size:13px;padding:10px 14px;width:100%;outline:none;font-family:'Inter',sans-serif;transition:border-color .2s}
+  textarea:focus,input:focus{border-color:#6366f1}
+  textarea{resize:vertical;line-height:1.6}
+  .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .analyze-btn{width:100%;background:#6366f1;color:#fff;border:none;border-radius:8px;padding:13px;font-size:14px;font-weight:500;cursor:pointer;margin-top:12px;transition:background .2s;letter-spacing:.02em}
+  .analyze-btn:hover{background:#4f46e5}
+  .analyze-btn:disabled{background:#2d3149;color:#6b7280;cursor:not-allowed}
+
+  /* ── Loader ── */
+  .loader{display:none;text-align:center;padding:2rem}
+  .spinner{width:40px;height:40px;border:3px solid #1e2235;border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loader-text{font-size:13px;color:#6b7280}
+
+  /* ── Results ── */
+  .results{display:none}
+  .divider{border:none;border-top:0.5px solid #1e2235;margin:1.5rem 0}
+
+  /* ── Score row ── */
+  .score-row{display:grid;grid-template-columns:220px 1fr;gap:1.5rem;align-items:center}
+  .gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .gauge-label{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}
+  .grade-badge{font-size:20px;font-weight:500;padding:6px 20px;border-radius:8px}
+
+  /* ── Stat cards ── */
+  .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem}
+  .stat-card{background:#131720;border:0.5px solid #1e2235;border-radius:8px;padding:12px 14px}
+  .stat-val{font-size:22px;font-weight:500;color:#fff}
+  .stat-lbl{font-size:11px;color:#6b7280;margin-top:3px}
+
+  /* ── Progress bars ── */
+  .prog-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .prog-label{font-size:12px;color:#9ca3af;width:110px;flex-shrink:0}
+  .prog-track{flex:1;height:6px;background:#1a1d27;border-radius:99px;overflow:hidden}
+  .prog-fill{height:100%;border-radius:99px;transition:width 1s ease}
+  .prog-val{font-size:12px;color:#6b7280;width:38px;text-align:right}
+
+  /* ── Chart ── */
+  .chart-card{background:#131720;border:0.5px solid #1e2235;border-radius:12px;padding:1.25rem;margin-bottom:1.5rem}
+  .chart-card-title{font-size:12px;color:#6b7280;margin-bottom:1rem}
+  .bar-group{display:flex;flex-direction:column;gap:10px}
+  .bar-row{display:flex;align-items:center;gap:10px}
+  .bar-name{font-size:12px;color:#9ca3af;width:64px;flex-shrink:0;text-align:right}
+  .bar-track{flex:1;height:22px;background:#0f1117;border-radius:4px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:10px;font-size:11px;font-weight:500;width:0;transition:width 1s ease}
+  .bar-count{font-size:12px;color:#6b7280;width:24px;text-align:right}
+
+  /* ── Skill gap section ── */
+  .gap-card{background:#131720;border:0.5px solid #1e2235;border-radius:12px;padding:1.25rem;margin-bottom:1.5rem}
+  .gap-sub{font-size:11px;color:#6b7280;margin-bottom:8px;margin-top:12px}
+  .gap-sub:first-of-type{margin-top:0}
+  .badges{display:flex;flex-wrap:wrap;gap:8px}
+  .badge{font-size:12px;padding:5px 14px;border-radius:999px;font-weight:500;cursor:pointer;transition:opacity .15s;display:inline-block}
+  .badge:hover{opacity:.7}
+  .badge-present{background:#052e16;color:#4ade80;border:0.5px solid #166534}
+  .badge-partial{background:#431407;color:#fb923c;border:0.5px solid #9a3412}
+  .badge-missing{background:#450a0a;color:#f87171;border:0.5px solid #991b1b}
+  .empty-state{font-size:12px;color:#4b5563;font-style:italic}
+
+  /* ── Top skills ── */
+  .learn-card{background:#131720;border:0.5px solid #1e2235;border-radius:12px;padding:1.25rem}
+  .learn-row{display:flex;align-items:center;gap:12px;background:#0f1117;border-radius:8px;padding:11px 14px;margin-bottom:8px}
+  .learn-rank{font-size:18px;font-weight:500;width:22px;flex-shrink:0}
+  .learn-name{font-size:13px;color:#e2e8f0;flex:1}
+  .learn-demand{font-size:11px;color:#6b7280;margin-right:8px}
+  .learn-btn{background:transparent;border:0.5px solid #4f46e5;color:#818cf8;font-size:11px;padding:5px 14px;border-radius:99px;cursor:pointer;white-space:nowrap;transition:background .15s;text-decoration:none}
+  .learn-btn:hover{background:#1e1b4b}
+  .no-missing{font-size:13px;color:#4ade80;padding:.5rem 0}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-icon">📄</div>
+  <span class="nav-title">ATS Resume Analyzer</span>
+  <span class="nav-sub">ML-powered · Skill Gap + ATS Score</span>
+</nav>
+
+<div class="container">
+
+  <!-- ── Input ── -->
+  <div class="input-section">
+    <div class="section-heading">Paste your details</div>
+    <div class="input-grid">
+      <div class="input-group">
+        <label class="input-label">Resume text</label>
+        <textarea id="resume_text" rows="10" placeholder="Paste your full resume here..."></textarea>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Job description</label>
+        <textarea id="jd_text" rows="10" placeholder="Paste the full job description here..."></textarea>
+      </div>
+    </div>
+    <div class="meta-grid">
+      <div class="input-group">
+        <label class="input-label">Job title</label>
+        <input id="jd_title" type="text" placeholder="e.g. Senior Data Scientist"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Minimum experience required (years)</label>
+        <input id="min_exp" type="number" min="0" max="30" value="2"/>
+      </div>
+    </div>
+    <button class="analyze-btn" id="analyzeBtn" onclick="analyze()">🔍 Analyze Resume</button>
+  </div>
+
+  <!-- ── Loader ── -->
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <div class="loader-text">Analyzing your resume — this takes a few seconds...</div>
+  </div>
+
+  <!-- ── Results ── -->
+  <div class="results" id="results">
+
+    <!-- Score + gauge -->
+    <div class="chart-card">
+      <div class="section-heading">ATS Score</div>
+      <div class="score-row">
+        <div class="gauge-wrap">
+          <div class="gauge-label">Overall score</div>
+          <svg id="gauge-svg" width="170" height="170" viewBox="0 0 170 170">
+            <circle cx="85" cy="85" r="70" fill="none" stroke="#1a1d27" stroke-width="14"/>
+            <circle id="gauge-circle" cx="85" cy="85" r="70" fill="none" stroke="#6366f1"
+              stroke-width="14" stroke-dasharray="439.8" stroke-dashoffset="439.8"
+              stroke-linecap="round" transform="rotate(-90 85 85)"
+              style="transition:stroke-dashoffset 1.2s ease,stroke .4s"/>
+            <text id="gauge-score" x="85" y="80" text-anchor="middle"
+              fill="#fff" font-size="30" font-weight="500">0</text>
+            <text x="85" y="100" text-anchor="middle" fill="#6b7280" font-size="12">out of 100</text>
+          </svg>
+          <span class="grade-badge" id="grade-badge">—</span>
+        </div>
+
+        <div>
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-val" id="stat-skills">—</div>
+              <div class="stat-lbl">Skills matched</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val" id="stat-exp">—</div>
+              <div class="stat-lbl">Experience detected</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val" id="stat-edu">—</div>
+              <div class="stat-lbl">Education level</div>
+            </div>
+          </div>
+          <div class="prog-row">
+            <span class="prog-label">Skill match</span>
+            <div class="prog-track"><div class="prog-fill" id="p-skill" style="background:#6366f1;width:0%"></div></div>
+            <span class="prog-val" id="pv-skill">0%</span>
+          </div>
+          <div class="prog-row">
+            <span class="prog-label">Semantic fit</span>
+            <div class="prog-track"><div class="prog-fill" id="p-sbert" style="background:#8b5cf6;width:0%"></div></div>
+            <span class="prog-val" id="pv-sbert">0%</span>
+          </div>
+          <div class="prog-row">
+            <span class="prog-label">Experience</span>
+            <div class="prog-track"><div class="prog-fill" id="p-exp" style="background:#06b6d4;width:0%"></div></div>
+            <span class="prog-val" id="pv-exp">0%</span>
+          </div>
+          <div class="prog-row">
+            <span class="prog-label">Education</span>
+            <div class="prog-track"><div class="prog-fill" id="p-edu" style="background:#10b981;width:0%"></div></div>
+            <span class="prog-val" id="pv-edu">0%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skill gap chart -->
+    <div class="chart-card">
+      <div class="chart-card-title">Skill distribution overview</div>
+      <div class="bar-group">
+        <div class="bar-row">
+          <span class="bar-name">Present</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-present" style="background:#16a34a;color:#bbf7d0"></div></div>
+          <span class="bar-count" id="bc-present">0</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-name">Partial</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-partial" style="background:#c2410c;color:#fed7aa"></div>  </div>
+          <span class="bar-count" id="bc-partial">0</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-name">Missing</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-missing" style="background:#b91c1c;color:#fecaca"></div></div>
+          <span class="bar-count" id="bc-missing">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skill gap badges -->
+    <div class="gap-card">
+      <div class="section-heading">Skill gap report</div>
+      <div class="gap-sub">✅ Present — click any skill to explore</div>
+      <div class="badges" id="badges-present"></div>
+      <div class="gap-sub">🔶 Partial match — click to explore</div>
+      <div class="badges" id="badges-partial"></div>
+      <div class="gap-sub">❌ Missing — click to explore</div>
+      <div class="badges" id="badges-missing"></div>
+    </div>
+
+    <!-- Top skills to learn -->
+    <div class="learn-card">
+      <div class="section-heading">Top skills to learn</div>
+      <div id="learn-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const EDU_LABELS = {0:"Unknown",1:"High School",2:"Associate",3:"Bachelor",4:"Master",5:"PhD"};
+const RANK_COLORS = ["#6366f1","#8b5cf6","#06b6d4","#10b981","#f59e0b"];
+
+function googleUrl(skill){
+  return "https://www.google.com/search?q=" + encodeURIComponent(skill);
+}
+function learnUrl(skill){
+  return "https://www.google.com/search?q=" + encodeURIComponent(skill + " tutorial for beginners");
+}
+
+function setProgress(id, valId, pct){
+  setTimeout(()=>{
+    document.getElementById(id).style.width = Math.min(pct,100) + "%";
+    document.getElementById(valId).textContent = Math.round(pct) + "%";
+  }, 200);
+}
+
+function animateGauge(score){
+  const circle = document.getElementById("gauge-circle");
+  const label  = document.getElementById("gauge-score");
+  const total  = 439.8;
+  const offset = total - (score / 100) * total;
+
+  let color = "#e74c3c";
+  if(score >= 75) color = "#4ade80";
+  else if(score >= 60) color = "#6366f1";
+  else if(score >= 45) color = "#f59e0b";
+  else if(score >= 30) color = "#fb923c";
+
+  circle.style.stroke = color;
+  setTimeout(()=>{ circle.style.strokeDashoffset = offset; }, 100);
+
+  let current = 0;
+  const step  = score / 60;
+  const timer = setInterval(()=>{
+    current = Math.min(current + step, score);
+    label.textContent = Math.round(current);
+    if(current >= score) clearInterval(timer);
+  }, 20);
+}
+
+function setGradeBadge(grade){
+  const el = document.getElementById("grade-badge");
+  el.textContent = "Grade " + grade;
+  const styles = {
+    A:{bg:"#14532d",color:"#4ade80"},
+    B:{bg:"#1e3a5f",color:"#60a5fa"},
+    C:{bg:"#451a03",color:"#fbbf24"},
+    D:{bg:"#431407",color:"#fb923c"},
+    F:{bg:"#450a0a",color:"#f87171"}
+  };
+  const s = styles[grade] || styles["F"];
+  el.style.background = s.bg;
+  el.style.color = s.color;
+}
+
+function renderBadges(present, partial, missing){
+  const pEl = document.getElementById("badges-present");
+  const paEl= document.getElementById("badges-partial");
+  const mEl = document.getElementById("badges-missing");
+
+  pEl.innerHTML = present.length
+    ? present.map(s=>`<a class="badge badge-present" href="${googleUrl(s)}" target="_blank">${s}</a>`).join("")
+    : `<span class="empty-state">No exact matches found</span>`;
+
+  paEl.innerHTML = partial.length
+    ? partial.map(p=>`<a class="badge badge-partial" href="${googleUrl(p.skill)}" target="_blank">${p.skill} ≈ ${p.matched_with} (${p.similarity})</a>`).join("")
+    : `<span class="empty-state">No partial matches</span>`;
+
+  mEl.innerHTML = missing.length
+    ? missing.map(s=>`<a class="badge badge-missing" href="${googleUrl(s)}" target="_blank">${s}</a>`).join("")
+    : `<span class="empty-state">No missing skills — great match!</span>`;
+}
+
+function renderChart(present, partial, missing){
+  const total = present + partial + missing;
+  if(total === 0) return;
+  const pct = s => Math.round((s/total)*100);
+
+  setTimeout(()=>{
+    const bp = document.getElementById("bar-present");
+    bp.style.width = pct(present) + "%";
+    bp.textContent = present + " skills";
+
+    const bpa = document.getElementById("bar-partial");
+    bpa.style.width = pct(partial) + "%";
+    bpa.textContent = partial + " skills";
+
+    const bm = document.getElementById("bar-missing");
+    bm.style.width = pct(missing) + "%";
+    bm.textContent = missing + " skills";
+  }, 300);
+
+  document.getElementById("bc-present").textContent = present;
+  document.getElementById("bc-partial").textContent = partial;
+  document.getElementById("bc-missing").textContent = missing;
+}
+
+function renderLearnList(missing){
+  const el = document.getElementById("learn-list");
+  if(!missing.length){
+    el.innerHTML = `<div class="no-missing">🎉 You have all required skills for this role!</div>`;
+    return;
+  }
+  const demand = (i) => i < 2 ? "high demand" : i < 4 ? "moderate demand" : "good to have";
+  el.innerHTML = missing.slice(0,5).map((s,i)=>`
+    <div class="learn-row">
+      <span class="learn-rank" style="color:${RANK_COLORS[i]}">${i+1}</span>
+      <span class="learn-name">${s}</span>
+      <span class="learn-demand">${demand(i)}</span>
+      <a class="learn-btn" href="${learnUrl(s)}" target="_blank">Learn ↗</a>
+    </div>`).join("");
+}
+
+async function analyze(){
+  const resume = document.getElementById("resume_text").value.trim();
+  const jd     = document.getElementById("jd_text").value.trim();
+  const title  = document.getElementById("jd_title").value.trim();
+  const exp    = parseFloat(document.getElementById("min_exp").value) || 0;
+
+  if(!resume || !jd || !title){
+    alert("Please fill in resume, job description and job title.");
+    return;
+  }
+
+  document.getElementById("analyzeBtn").disabled = true;
+  document.getElementById("loader").style.display = "block";
+  document.getElementById("results").style.display = "none";
+
+  try {
+    const res = await fetch("/analyze", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        resume_text: resume, jd_text: jd,
+        jd_title: title, min_exp_years: exp
+      })
+    });
+
+    const d = await res.json();
+    if(d.error){ alert("Error: " + d.error); return; }
+
+    const f = d.features;
+
+    animateGauge(d.ats_score);
+    setGradeBadge(d.ats_grade);
+
+    document.getElementById("stat-skills").textContent =
+      d.present.length + d.partial.length + "/" + d.jd_skills.length;
+    document.getElementById("stat-exp").textContent =
+      (d.exp_years || 0) + " yrs";
+    document.getElementById("stat-edu").textContent =
+      EDU_LABELS[d.edu_level] || "Unknown";
+
+    setProgress("p-skill","pv-skill", f.skill_overlap_ratio * 100);
+    setProgress("p-sbert","pv-sbert", f.sbert_similarity   * 100);
+    setProgress("p-exp",  "pv-exp",   f.exp_score          * 100);
+    setProgress("p-edu",  "pv-edu",   f.edu_score          * 100);
+
+    renderChart(d.present.length, d.partial.length, d.missing.length);
+    renderBadges(d.present, d.partial, d.missing);
+    renderLearnList(d.missing);
+
+    document.getElementById("results").style.display = "block";
+    document.getElementById("results").scrollIntoView({behavior:"smooth"});
+
+  } catch(err){
+    alert("Something went wrong. Check the Flask server is running.");
+    console.error(err);
+  } finally {
+    document.getElementById("loader").style.display = "none";
+    document.getElementById("analyzeBtn").disabled = false;
+  }
+}
+</script>
+</body>
+</html>
